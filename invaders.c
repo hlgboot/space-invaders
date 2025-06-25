@@ -1,26 +1,33 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <allegro5/allegro.h>
-#include <allegro5/allegro_font.h>
-#include <allegro5/allegro_ttf.h>
 #include <allegro5/allegro_primitives.h>
 
-#define RECORD_FILE "record.txt"
+#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_ttf.h>
+
+#include <allegro5/allegro_audio.h>
+#include <allegro5/allegro_acodec.h>
+
+#include <allegro5/allegro_image.h>
+
+#define RECORD_FILE "files/record.txt"
 
 // VARIAVEIS GLOBAIS
 const int SCREEN_W = 960;
-const int SCREEN_H = 540;
+const int SCREEN_H = 700;
 
 const int GRASS_H = 60;
 
 const int NAVE_W = 100;
 const int NAVE_H = 50;
 
-const int N_ALIEN_ROWS = 5;
-const int N_ALIEN_COLS = 8;
+const int N_ALIEN_ROWS = 4;
+const int N_ALIEN_COLS = 5;
 
-const int ALIEN_W = 50;
-const int ALIEN_H = 25;
+const int ALIEN_W = 40;
+const int ALIEN_H = 40;
 float ALIEN_X_VEL = 0.8;
 
 const int MAX_TIROS_ALIEN = 5;
@@ -119,14 +126,15 @@ void initNave(Nave* nave) {
 	nave->cor = NAVE_COR;
 }
 	
-void draw_nave(Nave nave) {
-	float y_base = SCREEN_H - GRASS_H/2;
-	al_draw_filled_triangle(
+void draw_nave(Nave nave, ALLEGRO_BITMAP* nave_sprite) {
+	float y_base = SCREEN_H - GRASS_H/2 - 60;
+	/*al_draw_filled_triangle(
 		nave.x, y_base - NAVE_H,
 		nave.x-NAVE_W/2,y_base,
 		nave.x+NAVE_W/2,y_base,
 		NAVE_COR
-	);
+	);*/
+	al_draw_tinted_bitmap(nave_sprite, NAVE_COR, nave.x - NAVE_W / 2, y_base, 0);
 }
 	
 void update_nave(Nave* nave) {
@@ -139,29 +147,30 @@ void update_nave(Nave* nave) {
 }
 
 // FUNCOES ENTIDADE ALIEN
-void draw_alien(Alien alien) {
-	al_draw_filled_rectangle(
-		alien.x, alien.y,
-		alien.x + ALIEN_W, alien.y + ALIEN_H,
-		ALIEN_COR);
+void draw_alien(Alien alien, ALLEGRO_BITMAP* alien_sprite) {
+	/*al_draw_filled_rectangle(
+		alien.x, alien.y + 10,
+		alien.x + ALIEN_W, alien.y + ALIEN_H + 10,
+		ALIEN_COR); */
+	al_draw_tinted_bitmap(alien_sprite, ALIEN_COR, alien.x, alien.y, 0);
 }
 
 // FUNCOES CONJUNTO ALIENS
 void initAliens(Alien aliens[N_ALIEN_ROWS][N_ALIEN_COLS]) {
 	for (int i = 0; i < N_ALIEN_ROWS; i++) {
 		for (int j = 0; j < N_ALIEN_COLS; j++) {
-			aliens[i][j].x = j * (ALIEN_W + 10);
-			aliens[i][j].y = i * (ALIEN_H + 10);
+			aliens[i][j].x = j * (ALIEN_W + 30);
+			aliens[i][j].y = i * (ALIEN_H + 30);
 			aliens[i][j].cor = ALIEN_COR;
 			aliens[i][j].ativo = 1;
 		}
 	}
 }
 
-void draw_aliens(Alien aliens[N_ALIEN_ROWS][N_ALIEN_COLS]) {
+void draw_aliens(Alien aliens[N_ALIEN_ROWS][N_ALIEN_COLS], ALLEGRO_BITMAP* alien_sprite) {
 	for (int i = 0; i < N_ALIEN_ROWS; i++) {
 		for (int j = 0; j < N_ALIEN_COLS; j++) {
-			if(aliens[i][j].ativo) { draw_alien(aliens[i][j]); }
+			if(aliens[i][j].ativo) { draw_alien(aliens[i][j], alien_sprite); }
 		}
 	}
 }
@@ -235,7 +244,7 @@ void draw_tiro(Tiro tiro) {
 	}
 }
 
-void colisao_tiro_alien(Tiro* tiro, Alien aliens[N_ALIEN_ROWS][N_ALIEN_COLS], int* pontos) {
+void colisao_tiro_alien(Tiro* tiro, Alien aliens[N_ALIEN_ROWS][N_ALIEN_COLS], int* pontos, ALLEGRO_SAMPLE* audio) {
     if (!tiro->ativo)
         return;
 
@@ -249,6 +258,7 @@ void colisao_tiro_alien(Tiro* tiro, Alien aliens[N_ALIEN_ROWS][N_ALIEN_COLS], in
                     a->ativo = 0;
                     tiro->ativo = 0;
 					(*pontos)++;
+					al_play_sample(audio, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
 					changeColors();
                     return;
                 }
@@ -370,13 +380,48 @@ int main() {
         return -1;
     }
 
-	// Inicializa o modulo de fontes
+	// Inicializa e carrega a fonte
 	al_init_font_addon();
 	al_init_ttf_addon();
 
 	font = al_load_ttf_font("bitter.ttf", 24, 0);
 	if (!font) {
 		fprintf(stderr, "Falha ao carregar fonte TTF!\n");
+		return -1;
+	}
+
+	// Inicializa e carrega os audios
+	al_install_audio();
+	al_init_acodec_addon();
+	al_reserve_samples(3);
+
+	ALLEGRO_SAMPLE *explosao = al_load_sample("files/audio/explosao.wav");
+	ALLEGRO_SAMPLE *win = al_load_sample("files/audio/win.wav");
+	ALLEGRO_SAMPLE *loss = al_load_sample("files/audio/loss.wav");
+	if (!explosao || !win || !loss) {
+		fprintf(stderr, "Erro ao carregar os efeitos sonoros\n");
+		return -1;
+	}
+
+	ALLEGRO_AUDIO_STREAM* bg_music = NULL;
+	bg_music = al_load_audio_stream("files/audio/bg.ogg", 4, 2048);
+    if (!bg_music) {
+        fprintf(stderr, "Erro ao carregar a musica de fundo!\n");
+        return -1;
+    }
+
+	al_set_audio_stream_playmode(bg_music, ALLEGRO_PLAYMODE_LOOP);
+    al_attach_audio_stream_to_mixer(bg_music, al_get_default_mixer());
+
+	// Inicializa o addon de imagens
+	al_init_image_addon();
+	
+	ALLEGRO_BITMAP* alien_sprite = NULL;
+	ALLEGRO_BITMAP* nave_sprite = NULL;
+	alien_sprite = al_load_bitmap("files/images/alien.png");
+	nave_sprite = al_load_bitmap("files/images/nave.png");
+	if(!alien_sprite || !nave_sprite) {
+		fprintf(stderr, "Erro ao carregar sprites!\n");
 		return -1;
 	}
 
@@ -445,10 +490,10 @@ int main() {
 			draw_cenario(&pontos, font, &recorde);
 
 			update_nave(&nave);
-			draw_nave(nave);
+			draw_nave(nave, nave_sprite);
 
 			update_aliens(aliens);
-			draw_aliens(aliens);
+			draw_aliens(aliens, alien_sprite);
 
 			update_tiro(&tiro);
 			draw_tiro(tiro);
@@ -456,11 +501,13 @@ int main() {
 			update_tiros_alien(tiros);
 			draw_tiros_alien(tiros);
 
+			al_set_audio_stream_playing(bg_music, true);
+
 			if (rand() % 100 < 2) { // ~2% de chance por frame
     			alien_atira(aliens, tiros);
 			}
 
-			colisao_tiro_alien(&tiro, aliens, &pontos);
+			colisao_tiro_alien(&tiro, aliens, &pontos, explosao);
 
 			if(pontos > recorde) {saveRecord(pontos); recorde = pontos;}
 
@@ -530,6 +577,8 @@ int main() {
 		}
     }
 
+	al_destroy_audio_stream(bg_music);
+
 	if (isOver(&pontos)) {
 		// Limpa a tela
 		al_clear_to_color(al_map_rgb(0, 0, 0));
@@ -540,6 +589,7 @@ int main() {
 					"Parabéns! Você venceu!");
 
 		al_flip_display();
+		al_play_sample(win, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
 
 		// Espera 5 segundos
 		al_rest(2.0);
@@ -556,11 +606,16 @@ int main() {
 					"Que pena! Você perdeu!");
 
 		al_flip_display();
+		al_play_sample(loss, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
 
 		// Espera 5 segundos
 		al_rest(2.0);
 	}
 
+	al_destroy_bitmap(alien_sprite);
+	al_destroy_sample(explosao);
+	al_destroy_sample(win);
+	al_destroy_sample(loss);
 	al_destroy_font(font);
 	al_destroy_display(display);
 	al_destroy_event_queue(event_queue);
