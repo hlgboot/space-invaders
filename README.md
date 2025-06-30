@@ -28,11 +28,11 @@ Para jogar "Space Invaders", você precisará ter o **Allegro 5** configurado em
 
 3.  **Compilação:**
     Compile o código-fonte (`.c`) usando um compilador C compatível, vinculando as bibliotecas Allegro 5 necessárias.
-    * **Exemplo de comando de compilação (Linux/MinGW no Windows):**
+    * **Comando de compilação (Linux/MinGW no Windows):**
         ```bash
         make
         ```
-    * *Nota:* O nome do executável de saída será `invaders.exe`.
+    * *Nota:* O jogo foi desenvolvido em WSL2. O nome do executável de saída será `invaders.exe`.
 
 4.  **Estrutura de Arquivos:**
     Certifique-se de que a estrutura de arquivos e pastas esteja correta para que o jogo encontre seus recursos:
