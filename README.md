@@ -1,6 +1,6 @@
 # Space Invaders
 
-Este é um projeto de um clone simplificado do clássico jogo "Space Invaders", desenvolvido em linguagem C utilizando a biblioteca Allegro 5.
+Este é um projeto de um clone simplificado do clássico jogo "Space Invaders", desenvolvido em linguagem C utilizando a biblioteca Allegro 5 na plataforma do WSL2 (Subsistema Linux do Windows).
 Você pode acessar este projeto e esta documentação no meu github <https://github.com/hlgboot/space-invaders/> 
 
 ---
