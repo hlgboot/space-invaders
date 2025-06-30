@@ -30,20 +30,20 @@ Para jogar "Space Invaders", você precisará ter o **Allegro 5** configurado em
     Compile o código-fonte (`.c`) usando um compilador C compatível, vinculando as bibliotecas Allegro 5 necessárias.
     * **Exemplo de comando de compilação (Linux/MinGW no Windows):**
         ```bash
-        gcc main.c -o space_invaders -lallegro -lallegro_primitives -lallegro_font -lallegro_ttf -lallegro_audio -lallegro_acodec -lallegro_image
+        make
         ```
-    * *Nota:* O nome do executável de saída (`space_invaders` neste exemplo) pode ser alterado.
+    * *Nota:* O nome do executável de saída será `invaders.exe`.
 
 4.  **Estrutura de Arquivos:**
     Certifique-se de que a estrutura de arquivos e pastas esteja correta para que o jogo encontre seus recursos:
 
     ```
     space-invaders/
-    ├── main.c              # Código fonte principal do jogo
-    ├── bitter.ttf          # Fonte utilizada para o texto no jogo
+    ├── inavders.c              # Código fonte principal do jogo
+    ├── bitter.ttf              # Fonte utilizada para o texto no jogo
     ├── files/
     │   ├── audio/
-    │   │   ├── background_music.ogg  # Música de fundo do jogo
+    │   │   ├── bg.ogg                # Música de fundo do jogo
     │   │   ├── explosao.wav          # Efeito sonoro de explosão de alien
     │   │   ├── loss.wav              # Efeito sonoro de derrota
     │   │   └── win.wav               # Efeito sonoro de vitória
@@ -51,14 +51,14 @@ Para jogar "Space Invaders", você precisará ter o **Allegro 5** configurado em
     │   │   ├── alien.png             # Sprite da nave alienígena (em branco para coloração)
     │   │   └── nave.png              # Sprite da nave do jogador (em branco para coloração)
     │   └── record.txt                # Arquivo para armazenamento do recorde de pontuação
-    └── README.md             # Este arquivo de documentação
+    └── README.md               # Este arquivo de documentação
     ```
     O arquivo `record.txt` será criado automaticamente na primeira execução se não existir.
 
 5.  **Execução:**
     Após a compilação bem-sucedida, execute o arquivo gerado a partir do diretório raiz do projeto:
     ```bash
-    ./space_invaders
+    ./invaders.exe
     ```
 
 ### 1.3. Controles
@@ -91,7 +91,7 @@ Esta seção descreve a estrutura do código-fonte, as principais estruturas de 
 
 ### 2.1. Estrutura do Código e Módulos Allegro 5
 
-O projeto é desenvolvido em linguagem C e utiliza a biblioteca Allegro 5 para todas as funcionalidades gráficas, de entrada e de áudio. O código-fonte principal está contido em `main.c`.
+O projeto é desenvolvido em linguagem C e utiliza a biblioteca Allegro 5 para todas as funcionalidades gráficas, de entrada e de áudio. O código-fonte principal está contido em `invaders.c`.
 
 As seguintes bibliotecas do Allegro 5 são utilizadas:
 
@@ -103,15 +103,14 @@ As seguintes bibliotecas do Allegro 5 são utilizadas:
 
 ### 2.2. Constantes Globais
 
-As constantes globais são definidas no início de `main.c` e controlam dimensões da tela, tamanhos de entidades, velocidades e contagens:
+As constantes globais são definidas no início de `invaders.c` e controlam dimensões da tela, tamanhos de entidades, velocidades e contagens:
 
-* `SCREEN_W`, `SCREEN_H`: Largura e altura da janela do jogo (960x540 pixels).
+* `SCREEN_W`, `SCREEN_H`: Largura e altura da janela do jogo (960x700 pixels).
 * `GRASS_H`: Altura da área do "solo" (grama) na parte inferior da tela.
 * `NAVE_W`, `NAVE_H`: Largura e altura da nave do jogador (100x50 pixels).
 * `N_ALIEN_ROWS`, `N_ALIEN_COLS`: Número de linhas (5) e colunas (8) da formação alienígena.
-* `ALIEN_W`, `ALIEN_H`: Largura e altura dos sprites dos aliens (50x25 pixels).
-* `ALIEN_X_VEL`: Velocidade de movimento horizontal dos aliens (0.8 pixels por frame). Inverte a direção ao atingir as bordas da tela.
-* `ALIEN_SPACING`: Espaçamento mínimo de 30 pixels entre os aliens, tanto horizontal quanto verticalmente.
+* `ALIEN_W`, `ALIEN_H`: Largura e altura dos sprites dos aliens (40x40 pixels).
+* `ALIEN_X_VEL`: Velocidade de movimento horizontal dos aliens (0.8 pixels por frame). Inverte a direção ao atingir as bordas da tela. (Declarado junto às constantes, mas não é uma)
 * `MAX_TIROS_ALIEN`: Número máximo de tiros que os aliens podem ter na tela simultaneamente (5).
 * `FPS`: Taxa de quadros por segundo do jogo (100 FPS).
 
@@ -164,7 +163,7 @@ As principais entidades do jogo são representadas pelas seguintes estruturas:
 
 A seguir, são detalhadas as funções e a lógica por trás dos principais módulos do jogo:
 
-* **`main()`**: A função `main` orquestra todo o ciclo do jogo. Ela inicializa todos os componentes do Allegro, carrega os recursos (fontes, sprites, áudios), configura a fila de eventos, inicializa as entidades do jogo (`Nave`, `Aliens`, `Tiros`), e entra no loop principal. Dentro do loop, ele processa eventos, atualiza o estado do jogo (movimento, colisões), desenha os elementos na tela e verifica as condições de fim de jogo. Ao final, lida com a exibição de vitória/derrota e libera todos os recursos alocados.
+* **`main()`**: A função `main` orquestra todo o ciclo do jogo. Ela inicializa todos os componentes do Allegro, carrega os recursos (fontes, sprites, áudios), configura a fila de eventos, inicializa as entidades do jogo (`Nave`, `Alien`, `Tiro`, `TiroAlien`), e entra no loop principal. Dentro do loop, ele processa eventos, atualiza o estado do jogo (movimento, colisões), desenha os elementos na tela e verifica as condições de fim de jogo. Ao final, lida com a exibição de vitória/derrota e libera todos os recursos alocados.
 
 * **Gerenciamento de Recorde (`readRecord()`, `saveRecord(int newR)`)**:
     * `readRecord()`: Abre o arquivo `files/record.txt` em modo de leitura e recupera o recorde salvo. Se o arquivo não existir ou não puder ser lido, retorna 0.
@@ -184,7 +183,7 @@ A seguir, são detalhadas as funções e a lógica por trás dos principais mód
     * `draw_tiro()`: Desenha o tiro como um círculo amarelo se estiver ativo.
 
 * **Aliens (`initAliens()`, `draw_aliens()`, `update_aliens()`, `colisao_aliens_solo()`, `alien_atira()`, `update_tiros_alien()`, `draw_tiros_alien()`)**:
-    * `initAliens()`: Preenche a matriz de `aliens`, definindo suas posições iniciais e estado ativo. A posição é calculada para garantir o `ALIEN_SPACING` mínimo entre eles.
+    * `initAliens()`: Preenche a matriz de `aliens`, definindo suas posições iniciais e estado ativo. A posição é calculada para garantir o 30px de espaçamento mínimo entre eles.
     * `draw_aliens()`: Itera sobre a matriz de aliens e chama `draw_alien()` para cada alien ativo.
     * `draw_alien()`: Renderiza o sprite `alien.png` na posição do alien, *tintado* com a `ALIEN_COR` para coloração dinâmica.
     * `update_aliens()`: Implementa o movimento em bloco dos aliens. Eles se movem horizontalmente e, ao atingir as bordas da tela, invertem a direção e descem uma linha.
@@ -203,6 +202,7 @@ A seguir, são detalhadas as funções e a lógica por trás dos principais mód
 As seguintes funcionalidades adicionais foram incorporadas ao projeto para enriquecer a experiência de jogo e demonstrar habilidades extras:
 
 * **Uso de Imagens (Sprites):** A nave do jogador e as naves alienígenas são representadas por arquivos PNG (`nave.png`, `alien.png`), substituindo os desenhos primitivos. Isso permite um visual mais detalhado e fiel ao jogo original, além de possibilitar a aplicação de cores dinâmicas via tinting do Allegro.
+* **Tiros das Naves Alienígenas:** As naves alienígenas possuem a capacidade de disparar seus próprios projéteis em direção à nave do jogador. Um alien ativo aleatório (o mais baixo da coluna) pode atirar periodicamente, gerenciando múltiplos tiros (`MAX_TIROS_ALIEN`) simultâneos na tela. A colisão desses tiros com a nave do jogador resulta no fim do jogo.
 * **Geração de Diferentes Cenários (Coloração Dinâmica):** A cada vez que um alienígena é destruído, as cores do fundo, da grama, da nave do jogador e dos próprios aliens são alteradas aleatoriamente. Isso cria uma experiência visual variada e dinâmica a cada rodada.
 * **Sons e Músicas:** O jogo inclui uma música de fundo que toca em loop durante toda a partida, além de efeitos sonoros para eventos importantes:
     * **`explosao.wav`**: Tocado quando um alien é atingido pelo tiro do jogador.

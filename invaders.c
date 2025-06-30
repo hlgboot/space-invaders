@@ -23,8 +23,8 @@ const int GRASS_H = 60;
 const int NAVE_W = 100;
 const int NAVE_H = 50;
 
-const int N_ALIEN_ROWS = 4;
-const int N_ALIEN_COLS = 5;
+const int N_ALIEN_ROWS = 5;
+const int N_ALIEN_COLS = 8;
 
 const int ALIEN_W = 40;
 const int ALIEN_H = 40;
